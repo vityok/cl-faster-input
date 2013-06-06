@@ -7,7 +7,7 @@
 ;;
 ;; How to run with Clozure CL:
 ;;
-;; lx86cl --load benchmark-read-line.lisp --eval '(run)' --eval '(quit)'
+;; lx86cl --load benchmark-read-line --eval '(run)' --eval '(quit)'
 
 ;; With SBCL:
 ;; sbcl --load benchmark-read-line.lisp --eval '(run)' --eval '(quit)'
@@ -15,6 +15,9 @@
 ;; With ECL it is much better first to compile the file and only then run it:
 ;; ecl -compile benchmark-read-line.lisp
 ;; ecl -load benchmark-read-line.fas -eval "(run)" -eval "(quit)"
+
+;; Compiling file:
+;; (compile-file "benchmark-read-line.lisp")
 
 
 (defconstant +kb+ 1024)
@@ -25,15 +28,14 @@
 
 ;; -----------------------------------------------------------
 
-(defconstant +standard-optimize-settings+
-  '(optimize
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (optimize
     speed
     (safety 0)
     (space 0)
     (debug 0)
     (compilation-speed 0)
-    #+:lispworks (hcl:fixnum-safety 0))
-  "The standard optimize settings used by most declaration expressions.")
+    #+:lispworks (hcl:fixnum-safety 0))))
 
 ;; -----------------------------------------------------------
 
@@ -60,9 +62,7 @@ file open and close operations."
 
 (defun run-test-read-line ()
   "Count lines using standard READ-LINE."
-
-  (declare #.+standard-optimize-settings+)
-
+  
   (with-open-file (if +fname+
 		      :direction :input)
 
@@ -73,9 +73,7 @@ file open and close operations."
 
 (defun run-test-read-sequence-string ()
   "Count lines by reading data in chunks into a string."
-
-  (declare #.+standard-optimize-settings+)
-
+  
   (with-open-file (is +fname+
 		      :direction :input)
 
@@ -97,13 +95,11 @@ file open and close operations."
 
 Taken a que from Stackoverflow:
 http://stackoverflow.com/a/15813006"
-
-  (declare #.+standard-optimize-settings+)
-
+  
   (with-open-file (input-stream +fname+
 				:direction :input
 				:element-type '(unsigned-byte 8))
-    (let ((buf (make-array #.(* 16 +kb+) :element-type (stream-element-type input-stream)))
+    (let ((buf (make-array (* 16 +kb+) :element-type (stream-element-type input-stream)))
 	  (count 0))
 
       (declare (fixnum count)
@@ -120,7 +116,7 @@ http://stackoverflow.com/a/15813006"
 
 (defun run-test-read-sequence-by-char ()
   "Read the file char by char."
-  (declare #.+standard-optimize-settings+)
+  
   (with-open-file (input-stream +fname+
 				:direction :input)
     (let ((count 0))
@@ -137,9 +133,7 @@ http://stackoverflow.com/a/15813006"
 
 (defun run-test-read-sequence-by-byte ()
   "Read the file byte by byte."
-
-  (declare #.+standard-optimize-settings+)
-
+  
   (with-open-file (input-stream +fname+
 				:element-type 'unsigned-byte
 				:direction :input)
@@ -153,6 +147,9 @@ http://stackoverflow.com/a/15813006"
 	 :do (incf count))
 
       count)))
+
+;; -----------------------------------------------------------
+
 
 ;; -----------------------------------------------------------
 
