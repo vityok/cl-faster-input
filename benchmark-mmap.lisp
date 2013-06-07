@@ -13,6 +13,8 @@
 
 ;; Compiling file:
 ;; (compile-file "benchmark-mmap.lisp")
+;;
+;; (load "benchmark-mmap")
 
 
 ;; This benchmark relies on OSICAT POSIX system functions wrapper
@@ -23,16 +25,13 @@
 ;;
 ;; Instead of long, unsigned-long must be used in the errno wrapper.
 
-(ql:quickload "osicat")
-
-;; -----------------------------------------------------------
-
-(defconstant +fname+ "data.tmp")
 
 ;; -----------------------------------------------------------
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (ql:quickload "osicat")
+  (ql:quickload "cffi")
+  (ql:quickload "alexandria")
   (declaim (optimize
     speed
     (safety 0)
@@ -40,6 +39,10 @@
     (debug 0)
     (compilation-speed 0)
     #+:lispworks (hcl:fixnum-safety 0))))
+
+;; -----------------------------------------------------------
+
+(alexandria:define-constant +fname+ "data.tmp" :test #'string=)
 
 ;; -----------------------------------------------------------
 
@@ -62,15 +65,12 @@
 
 (defun mmap-file (path)
   (let ((fd (osicat-posix:open path (logior osicat-posix:o-rdonly))))
-    (format t "fd: ~a~%" fd)
     (unwind-protect
          (let* ((size (osicat-posix:stat-size (osicat-posix:fstat fd))))
-	   (format t "size: ~a~%" size)
 	   (let ((addr (osicat-posix:mmap (cffi:null-pointer) size
 					  (logior osicat-posix:prot-read)
 					  (logior osicat-posix:map-private)
 					  fd 0)))
-	     (format t "addr: ~a~%" addr)
 	     (values addr size)))
       (osicat-posix:close fd))))
 
@@ -91,16 +91,24 @@
 ;; -----------------------------------------------------------
 
 (defun run-test-osicat ()
+  (declare (optimize
+	    speed
+	    (safety 0)
+	    (space 0)
+	    (debug 0)
+	    (compilation-speed 0)
+	    #+:lispworks (hcl:fixnum-safety 0)))
+
   (let ((count 0))
     (declare (fixnum count))
-    (format t "begin:~%")
-    (with-mmapped-file (+fname+ addr size)
-      (format t "size: ~a~%" size)
-      (loop :for l :from 0 :to size
-	 :for b = (cffi:mem-aref addr :ushort)
-	 :when (= b #.(char-code #\Newline))
-	 :do (incf count)
-	 :do (cffi:incf-pointer addr 1)))))
+    (with-mmapped-file (+fname+ orig-addr size)
+      (dotimes (i 10)
+	(let ((addr orig-addr))
+	  (loop :for l fixnum :from 0 :to size
+	     :for b = (cffi:mem-aref addr :ushort)
+	     :when (= b #.(char-code #\Newline))
+	     :do (incf count)
+	     :do (cffi:incf-pointer addr)))))))
 
 ;; -----------------------------------------------------------
 
@@ -111,5 +119,5 @@
     (time (dotimes (i 10)  (RUN-TEST-MMAP-CCL))))
 
   (format t  "RUN-TEST-MMAP-OSICAT")
-  (time (dotimes (i 10)  (RUN-TEST-OSICAT)))
+  (time (RUN-TEST-OSICAT))
   )
