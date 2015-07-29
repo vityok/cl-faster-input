@@ -7,17 +7,17 @@
 ;;
 ;; How to run with Clozure CL:
 ;;
-;; lx86cl --load benchmark-read-line --eval '(run)' --eval '(quit)'
+;; lx86cl --load benchmark-count-lines --eval '(run)' --eval '(quit)'
 
 ;; With SBCL:
-;; sbcl --load benchmark-read-line.lisp --eval '(run)' --eval '(quit)'
+;; sbcl --load benchmark-count-lines.lisp --eval '(run)' --eval '(quit)'
 
 ;; With ECL it is much better first to compile the file and only then run it:
-;; ecl -compile benchmark-read-line.lisp
-;; ecl -load benchmark-read-line.fas -eval "(run)" -eval "(quit)"
+;; ecl -compile benchmark-count-lines.lisp
+;; ecl -load benchmark-count-lines.fas -eval "(run)" -eval "(quit)"
 
 ;; Compiling file:
-;; (compile-file "benchmark-read-line.lisp")
+;; (compile-file "benchmark-count-lines.lisp")
 
 
 (defconstant +kb+ 1024)
