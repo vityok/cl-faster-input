@@ -22,7 +22,7 @@
 
 (defconstant +kb+ 1024)
 (defconstant +mb+ #.(* 1024 1024))
-(defconstant +file-size+ (* 10 +kb+)
+(defconstant +file-size+ (* 10 +mb+)
   "This will produce a file 10MB in size.")
 (defconstant +fname+ "data.tmp")
 
@@ -48,14 +48,15 @@ times. The rationale is that we hope that the file is small enough to
 be cached, but is also large enough not to overshadow the tests with
 file open and close operations."
 
-  (let ((line (make-string (- +kb+ 1)
+  (let* ((line-length 64)
+	 (line (make-string 64
 			   :initial-element #\A)))
 
     (with-open-file (of +fname+
 			:direction :output
 			:if-exists :supersede
 			:if-does-not-exist :create)
-      (dotimes (i +file-size+)
+      (dotimes (i (round +file-size+ line-length))
 	(format of "~a~%" line)))))
 
 ;; -----------------------------------------------------------

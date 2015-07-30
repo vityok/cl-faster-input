@@ -22,15 +22,17 @@
 ;;
 ;; sbcl --load benchmark-read-line.lisp --eval '(run)' --eval '(quit)'
 ;;
-;; sbcl --eval '(compile-file "benchmark-read-line.lisp")' 
-;; sbcl --load benchmark-read-line.fasl --eval '(run)' --eval '(quit)'
+;; sbcl --eval '(compile-file "benchmark-read-line.lisp")'
+;; sbcl --load benchmark-read-line --eval '(run)' --eval '(quit)'
 
 #+ignore
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (pushnew :costly-assert *features*))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (ql:quickload "com.informatimago.common-lisp.cesarum")
   (declaim (optimize speed)))
+(use-package :COM.INFORMATIMAGO.COMMON-LISP.CESARUM.ASCII)
 
 ;; the same as in benchmark-count-lines.lisp
 (defconstant +fname+ "data.tmp")
@@ -179,10 +181,20 @@ START, END:     bounding index designators of SEQUENCE.
 		  (loop for line = (read-line is nil)
 			while line
 			count line)))
-  
+
+(defun run-read-ascii-line ()
+  (with-open-file (is +fname+ :direction :input :element-type '(unsigned-byte 8))
+		  (loop for line = (read-ascii-line is nil)
+			while line
+			count line)))
 
 (defun run ()
+  ;; warming up
+  (run-buffer)
+  ;; run the benchmark
   (format t "RUN-BUFFER~%")
   (time (dotimes (i 10) (run-buffer)))
   (format t "RUN-READ-LINE~%")
-  (time (dotimes (i 10) (run-read-line))))
+  (time (dotimes (i 10) (run-read-line)))
+  (format t "RUN-READ-ASCII-LINE~%")
+  (time (dotimes (i 10) (run-read-ascii-line))))
