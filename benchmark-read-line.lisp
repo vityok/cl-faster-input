@@ -17,27 +17,46 @@
 ;;
 ;; https://groups.google.com/forum/#!msg/comp.lang.lisp/8nzWKfdSySM/HL7DbRiP95oJ
 ;;
-;; This benchmark is intended to compare performance of both
+;; This benchmark is intended to compare performance of different
 ;; approaches.
+
+;; Compile the sources first:
 ;;
-;; sbcl --load benchmark-read-line.lisp --eval '(run)' --eval '(quit)'
+;; sbcl --eval '(compile-file "benchmark-read-line.lisp")' --eval '(quit)'
 ;;
-;; sbcl --eval '(compile-file "benchmark-read-line.lisp")'
-;; sbcl --load benchmark-read-line --eval '(run)' --eval '(quit)'
+;; Prepare the data file before running the benchmark:
+;;
+;; sbcl --load benchmark-count-lines.lisp --eval '(prepare)'
+;;
+;; Run the benchmark:
+;;
+;; sbcl --load benchmark-read-line --eval '(bm:run)' --eval '(quit)'
+;;
+;; sbcl --load benchmark-read-line.lisp --eval '(bm:run)' --eval '(quit)'
+
 
 #+ignore
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (pushnew :costly-assert *features*))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (ql:quickload "com.informatimago.common-lisp.cesarum")
+  (ql:quickload :com.informatimago.common-lisp.cesarum)
+  (ql:quickload :ascii-strings)
   (declaim (optimize speed)))
-(use-package :COM.INFORMATIMAGO.COMMON-LISP.CESARUM.ASCII)
+
+(defpackage :benchmark-read-line
+    (:nicknames :bm)
+    (:use :common-lisp :com.informatimago.common-lisp.cesarum.ascii)
+    (:export :run))
+
+(in-package :benchmark-read-line)
 
 ;; the same as in benchmark-count-lines.lisp
 (defconstant +fname+ "data.tmp")
 
 (declaim (inline %read-char-until %finish-read-line-into-sequence))
+
+;; -----------------------------------------------------------
 
 (defun %read-char-until (stream recursivep store)
   (loop
@@ -51,6 +70,8 @@
           (error 'end-of-file :stream stream)
           (values eof-value start nil))
       (values buffer start (eql ch #\Newline))))
+
+;; -----------------------------------------------------------
 
 (defgeneric read-line-into-sequence (sequence input-stream
                                      &key
@@ -168,25 +189,42 @@ START, END:     bounding index designators of SEQUENCE.
                                         current)))))
           buffer stream eof-error-p eof-value start))))))
 
+;; -----------------------------------------------------------
+
 (defun run-buffer ()
   (let ((buffer (make-array 80 :element-type 'character :initial-element #\space))
 	(lines 0))
     (with-open-file (is +fname+ :direction :input)
-		    (loop for (VALUE POSITION NEWLINE-SEEN-P) = (multiple-value-list (read-line-into-sequence buffer is :eof-error-p nil))
-			  while VALUE
-			  do (incf lines)))))
+      (loop for (VALUE POSITION NEWLINE-SEEN-P) = (multiple-value-list (read-line-into-sequence buffer is :eof-error-p nil))
+	 while VALUE
+	 do (incf lines)))))
+
+;; -----------------------------------------------------------
 
 (defun run-read-line ()
   (with-open-file (is +fname+ :direction :input)
-		  (loop for line = (read-line is nil)
-			while line
-			count line)))
+    (loop for line = (read-line is nil)
+       while line
+       count line)))
+
+;; -----------------------------------------------------------
 
 (defun run-read-ascii-line ()
   (with-open-file (is +fname+ :direction :input :element-type '(unsigned-byte 8))
-		  (loop for line = (read-ascii-line is nil)
-			while line
-			count line)))
+    (loop for line = (read-ascii-line is nil)
+       while line
+       count line)))
+
+;; -----------------------------------------------------------
+
+(defun run-ub-read-line ()
+  (with-open-file (is +fname+ :direction :input :element-type 'ascii:ub-char)
+    (loop with reader = (ascii:make-ub-line-reader :stream is)
+       for line = (ascii:ub-read-line reader)
+       while line
+       count line)))
+
+;; -----------------------------------------------------------
 
 (defun run ()
   ;; warming up
@@ -197,4 +235,6 @@ START, END:     bounding index designators of SEQUENCE.
   (format t "RUN-READ-LINE~%")
   (time (dotimes (i 10) (run-read-line)))
   (format t "RUN-READ-ASCII-LINE~%")
-  (time (dotimes (i 10) (run-read-ascii-line))))
+  (time (dotimes (i 10) (run-read-ascii-line)))
+  (format t "RUN-UB-READ-LINE~%")
+  (time (dotimes (i 10) (run-ub-read-line))))

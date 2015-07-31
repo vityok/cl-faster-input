@@ -10,7 +10,8 @@
 ;; lx86cl --load benchmark-count-lines --eval '(run)' --eval '(quit)'
 
 ;; With SBCL:
-;; sbcl --load benchmark-count-lines.lisp --eval '(run)' --eval '(quit)'
+;; sbcl --eval '(compile-file "benchmark-count-lines.lisp")' --eval '(quit)'
+;; sbcl --load benchmark-count-lines --eval '(run)' --eval '(quit)'
 
 ;; With ECL it is much better first to compile the file and only then run it:
 ;; ecl -compile benchmark-count-lines.lisp
