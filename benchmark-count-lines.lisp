@@ -57,6 +57,7 @@ file open and close operations."
 			:direction :output
 			:if-exists :supersede
 			:if-does-not-exist :create)
+		    (declare (stream of))
       (dotimes (i (round +file-size+ line-length))
 	(format of "~a~%" line)))))
 
@@ -64,7 +65,7 @@ file open and close operations."
 
 (defun run-test-read-line ()
   "Count lines using standard READ-LINE."
-  
+
   (with-open-file (if +fname+
 		      :direction :input)
 
@@ -75,7 +76,7 @@ file open and close operations."
 
 (defun run-test-read-sequence-string ()
   "Count lines by reading data in chunks into a string."
-  
+
   (with-open-file (is +fname+
 		      :direction :input)
 
@@ -97,11 +98,11 @@ file open and close operations."
 
 Taken a que from Stackoverflow:
 http://stackoverflow.com/a/15813006"
-  
+
   (with-open-file (input-stream +fname+
 				:direction :input
 				:element-type '(unsigned-byte 8))
-    (let ((buf (make-array (* 16 +kb+) :element-type (stream-element-type input-stream)))
+    (let ((buf (make-array (* 16 +kb+) :element-type '(unsigned-byte 8)))
 	  (count 0))
 
       (declare (fixnum count)
@@ -116,9 +117,35 @@ http://stackoverflow.com/a/15813006"
 
 ;; -----------------------------------------------------------
 
+#+sbcl
+(defun run-test-read-posix ()
+  "Reading into a bytes array.
+
+Taken a que from Stackoverflow:
+http://stackoverflow.com/a/15813006"
+
+  (let* ((fd (sb-posix:open +fname+ sb-posix:o-rdonly))
+	 (buf-len (* 16 +kb+))
+	 (buf (make-array buf-len :element-type '(unsigned-byte 8)))
+	 (count 0))
+
+    (declare (fixnum fd)
+	     (fixnum count)
+	     (type (array (unsigned-byte 8)) buf))
+
+    (loop :for pos of-type fixnum = (sb-posix:read fd (sb-sys:vector-sap buf) buf-len)
+	  :while (> pos 0) :do
+	  (loop :for c :across buf
+		:when (= c #.(char-code #\Newline))
+		:do (incf count)))
+    (sb-posix:close fd)
+    count))
+
+;; -----------------------------------------------------------
+
 (defun run-test-read-sequence-by-char ()
   "Read the file char by char."
-  
+
   (with-open-file (input-stream +fname+
 				:direction :input)
     (let ((count 0))
@@ -135,12 +162,12 @@ http://stackoverflow.com/a/15813006"
 
 (defun run-test-read-sequence-by-byte ()
   "Read the file byte by byte."
-  
+
   (with-open-file (input-stream +fname+
 				:element-type 'unsigned-byte
 				:direction :input)
     (let ((count 0))
-      
+
       (declare (fixnum count))
 
       (loop :for b :of-type unsigned-byte = (read-byte input-stream nil 0)
@@ -149,9 +176,6 @@ http://stackoverflow.com/a/15813006"
 	 :do (incf count))
 
       count)))
-
-;; -----------------------------------------------------------
-
 
 ;; -----------------------------------------------------------
 
@@ -169,6 +193,11 @@ http://stackoverflow.com/a/15813006"
 
   (format t "RUN-TEST-READ-SEQUENCE-BYTE-ARRAY~%")
   (time (dotimes (i 10) (run-test-read-sequence-byte-array)))
+
+  #+sbcl
+  (progn
+    (format t "RUN-TEST-READ-POSIX~%")
+    (time (dotimes (i 10) (RUN-TEST-READ-POSIX))))
 
   (format t "RUN-TEST-READ-SEQUENCE-BY-CHAR~%")
   (time (dotimes (i 10) (RUN-TEST-READ-SEQUENCE-BY-CHAR)))
