@@ -24,7 +24,7 @@ How to reproduce:
 ```lisp
 (fio:benchmark-count-lines)
 (fio:benchmark-mmap)
-(fio:benchmark-read-line
+(fio:benchmark-read-line)
 ```
 
 Any suggestions, corrections and ideas are welcome!

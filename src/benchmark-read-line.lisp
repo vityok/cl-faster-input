@@ -192,10 +192,10 @@ START, END:     bounding index designators of SEQUENCE.
 
 ;; -----------------------------------------------------------
 
-(defun run-ub-read-line ()
+(defun run-ub-read-line-string ()
   (with-open-file (is +fname+ :direction :input :element-type 'ascii:ub-char)
     (loop with reader = (ascii:make-ub-line-reader :stream is)
-       for line = (ascii:ub-read-line reader)
+       for line = (ascii:ub-read-line-string reader)
        while line
        count line)))
 
@@ -214,7 +214,7 @@ START, END:     bounding index designators of SEQUENCE.
   (time (dotimes (i 10) (run-read-line)))
   (format t "RUN-READ-ASCII-LINE~%")
   (time (dotimes (i 10) (run-read-ascii-line)))
-  (format t "RUN-UB-READ-LINE~%")
-  (time (dotimes (i 10) (run-ub-read-line))))
+  (format t "RUN-UB-READ-LINE-STRING~%")
+  (time (dotimes (i 10) (run-ub-read-line-STRING))))
 
 ;; EOF

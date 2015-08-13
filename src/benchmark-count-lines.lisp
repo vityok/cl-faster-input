@@ -159,6 +159,23 @@ http://stackoverflow.com/a/15813006"
 
 ;; -----------------------------------------------------------
 
+(defun run-fast-io-sequence ()
+  "Count lines using the fast-io library. It offers a function
+mimicking the standard read-sequence that is benchmarked in
+RUN-TEST-READ-SEQUENCE-BYTE-ARRAY."
+
+  (let ((vec (fast-io:make-octet-vector 80))
+	(count 0))
+    (with-open-file (is +fname+ :direction :input :element-type 'ascii:ub-char)
+      (fast-io:with-fast-input (buff vec is)
+	(loop :for pos = (fast-io:fast-read-sequence vec buff)
+	   :while (plusp pos) :do
+	   (loop :for c :across vec
+	      :when (= c #.(char-code #\Newline))
+	      :do (incf count)))))))
+
+;; -----------------------------------------------------------
+
 (defun benchmark-count-lines ()
 
   (unless (probe-file +fname+)
@@ -186,6 +203,10 @@ http://stackoverflow.com/a/15813006"
 
   (format t "RUN-TEST-READ-SEQUENCE-BY-BYTE~%")
   (time (dotimes (i 10) (RUN-TEST-READ-SEQUENCE-BY-BYTE)))
+
+  (format t "RUN-FAST-IO-SEQUENCE~%")
+  (time (dotimes (i 10) (RUN-FAST-IO-SEQUENCE)))
+
   )
 
 ;; EOF
