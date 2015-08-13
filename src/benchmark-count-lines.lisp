@@ -5,38 +5,18 @@
 ;; differ however in the amount of memory used and the time it takes
 ;; to complete the task.
 ;;
-;; How to run with Clozure CL:
-;;
-;; lx86cl --load benchmark-count-lines --eval '(run)' --eval '(quit)'
+;; These tests just count lines, however, they don't perform per-line
+;; processing: it is performed in the benchmark-read-line.lisp
 
-;; With SBCL:
-;; sbcl --eval '(compile-file "benchmark-count-lines.lisp")' --eval '(quit)'
-;; sbcl --load benchmark-count-lines --eval '(run)' --eval '(quit)'
+(in-package :cl-faster-input)
 
-;; With ECL it is much better first to compile the file and only then run it:
-;; ecl -compile benchmark-count-lines.lisp
-;; ecl -load benchmark-count-lines.fas -eval "(run)" -eval "(quit)"
-
-;; Compiling file:
-;; (compile-file "benchmark-count-lines.lisp")
-
+;; -----------------------------------------------------------
 
 (defconstant +kb+ 1024)
 (defconstant +mb+ #.(* 1024 1024))
 (defconstant +file-size+ (* 10 +mb+)
   "This will produce a file 10MB in size.")
 (defconstant +fname+ "data.tmp")
-
-;; -----------------------------------------------------------
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (declaim (optimize
-    speed
-    (safety 0)
-    (space 0)
-    (debug 0)
-    (compilation-speed 0)
-    #+:lispworks (hcl:fixnum-safety 0))))
 
 ;; -----------------------------------------------------------
 
@@ -179,8 +159,10 @@ http://stackoverflow.com/a/15813006"
 
 ;; -----------------------------------------------------------
 
-(defun run ()
-  (prepare)
+(defun benchmark-count-lines ()
+
+  (unless (probe-file +fname+)
+    (prepare))
 
   (format t "WARMING UP~%")
   (dotimes (i 10) (run-test-read-line))
@@ -204,7 +186,6 @@ http://stackoverflow.com/a/15813006"
 
   (format t "RUN-TEST-READ-SEQUENCE-BY-BYTE~%")
   (time (dotimes (i 10) (RUN-TEST-READ-SEQUENCE-BY-BYTE)))
-
   )
 
 ;; EOF

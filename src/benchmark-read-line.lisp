@@ -20,39 +20,14 @@
 ;; This benchmark is intended to compare performance of different
 ;; approaches.
 
-;; Compile the sources first:
-;;
-;; sbcl --eval '(compile-file "benchmark-read-line.lisp")' --eval '(quit)'
-;;
-;; Prepare the data file before running the benchmark:
-;;
-;; sbcl --load benchmark-count-lines.lisp --eval '(prepare)'
-;;
-;; Run the benchmark:
-;;
-;; sbcl --load benchmark-read-line --eval '(bm:run)' --eval '(quit)'
-;;
-;; sbcl --load benchmark-read-line.lisp --eval '(bm:run)' --eval '(quit)'
-
+(in-package :cl-faster-input)
 
 #+ignore
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (pushnew :costly-assert *features*))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (ql:quickload :com.informatimago.common-lisp.cesarum)
-  (ql:quickload :ascii-strings)
-  (declaim (optimize speed)))
-
-(defpackage :benchmark-read-line
-    (:nicknames :bm)
-    (:use :common-lisp :com.informatimago.common-lisp.cesarum.ascii)
-    (:export :run))
-
-(in-package :benchmark-read-line)
-
-;; the same as in benchmark-count-lines.lisp
-(defconstant +fname+ "data.tmp")
+  (declaim #.*standard-optimize-settings*))
 
 (declaim (inline %read-char-until %finish-read-line-into-sequence))
 
@@ -226,7 +201,10 @@ START, END:     bounding index designators of SEQUENCE.
 
 ;; -----------------------------------------------------------
 
-(defun run ()
+(defun benchmark-read-line ()
+  (unless (probe-file +fname+)
+    (prepare))
+
   ;; warming up
   (run-buffer)
   ;; run the benchmark
@@ -238,3 +216,5 @@ START, END:     bounding index designators of SEQUENCE.
   (time (dotimes (i 10) (run-read-ascii-line)))
   (format t "RUN-UB-READ-LINE~%")
   (time (dotimes (i 10) (run-ub-read-line))))
+
+;; EOF

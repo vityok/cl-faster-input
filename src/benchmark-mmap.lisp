@@ -1,22 +1,5 @@
 ;;; benchmarking memory mapped files
 
-;; How to run with Clozure CL:
-;;
-;; lx86cl --load benchmark-mmap --eval '(run)' --eval '(quit)'
-
-;; With SBCL:
-;; sbcl --load benchmark-mmap.lisp --eval '(run)' --eval '(quit)'
-
-;; With ECL it is much better first to compile the file and only then run it:
-;; ecl -compile benchmark-mmap.lisp
-;; ecl -load benchmark-mmap.fas -eval "(run)" -eval "(quit)"
-
-;; Compiling file:
-;; (compile-file "benchmark-mmap.lisp")
-;;
-;; (load "benchmark-mmap")
-
-
 ;; This benchmark relies on OSICAT POSIX system functions wrapper
 ;; library to call the mmap system function. Currently the OSICAT must
 ;; be patched according to the advice at:
@@ -25,24 +8,12 @@
 ;;
 ;; Instead of long, unsigned-long must be used in the errno wrapper.
 
+(in-package :cl-faster-input)
 
 ;; -----------------------------------------------------------
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (ql:quickload "osicat")
-  (ql:quickload "cffi")
-  (ql:quickload "alexandria")
-  (declaim (optimize
-    speed
-    (safety 0)
-    (space 0)
-    (debug 0)
-    (compilation-speed 0)
-    #+:lispworks (hcl:fixnum-safety 0))))
-
-;; -----------------------------------------------------------
-
-(alexandria:define-constant +fname+ "data.tmp" :test #'string=)
+  (declaim #.*standard-optimize-settings*))
 
 ;; -----------------------------------------------------------
 
@@ -112,7 +83,10 @@
 
 ;; -----------------------------------------------------------
 
-(defun run ()
+(defun benchmark-mmap ()
+  (unless (probe-file +fname+)
+    (prepare))
+
   #+ccl
   (progn
     (format t  "RUN-TEST-MMAP-CCL")
@@ -121,3 +95,5 @@
   (format t  "RUN-TEST-MMAP-OSICAT")
   (time (RUN-TEST-OSICAT))
   )
+
+;; EOF
