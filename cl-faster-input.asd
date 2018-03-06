@@ -12,6 +12,7 @@
 
 (defsystem :cl-faster-input
   :description "Benchmarking different i/o options available on Common Lisp"
+  :license "BSD"
   :components ((:module :src
 			:serial T
 			:components ((:file "package")
